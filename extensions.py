@@ -1,22 +1,64 @@
 import asyncio
 import requests
+import functools
 
 
 async def complete_neighbourhood(start):
-    neighbours = (requests.get(f'http://localhost:{start}').text.split(","))
+    neighbours = requests.get(f'http://localhost:{start}').text.split(",")
     futures = []
-    for node in neighbours:
-        async def process(node_):
+    for neighbour in neighbours:
+        async def process(node):
             for other in neighbours:
-                if other != node_:
-                    requests.get(f'http://localhost:{node_}/new?port={other}')
+                if other != node:
+                    requests.get(f'http://localhost:{node}/new?port={other}')
 
-        futures.append(asyncio.ensure_future(process(node)))
+        futures.append(asyncio.ensure_future(process(neighbour)))
     await asyncio.gather(*futures)
 
 
 async def climb_degree(start):
-    pass
+    while True:
+        neighbours = requests.get(f'http://localhost:{start}').text.split(",")
+
+        # asynchronous lookup for degrees of neighbour nodes
+        futures = []
+        neighbour_degree = []
+        for neighbour in neighbours:
+            async def process(node):
+                node_neighbours = requests.get(f'http://localhost:{node}').text.split(",")
+                neighbour_degree.append((node, len(node_neighbours)))
+
+            futures.append(asyncio.ensure_future(process(neighbour)))
+        await asyncio.gather(*futures)
+
+        # consider start as neighbour of itself
+        neighbour_degree.append((start, len(neighbours)))
+
+        # sort neighbour nodes primary acc. to higher degree and secondary acc. to lower port
+        def my_comparator(node_degree_1, node_degree_2):
+            port1, degree1 = node_degree_1
+            port2, degree2 = node_degree_2
+            if degree1 < degree2:
+                return 1
+            elif degree1 > degree2:
+                return -1
+            else:
+                if port1 < port2:
+                    return -1
+                elif port1 > port2:
+                    return 1
+                else:
+                    return 0
+        neighbour_degree = sorted(neighbour_degree, key=functools.cmp_to_key(my_comparator))
+
+        # stop recursion if no higher degree is found in the neighbourhood (or no lower port if degrees equal)
+        start_degree = len(neighbours)
+        if start_degree > neighbour_degree[0][1] \
+                or (start_degree == neighbour_degree[0][1] and start <= neighbour_degree[0][0]):
+            return start
+
+        # recursively look for the answer in the neighbour with the highest higher degree
+        start = neighbour_degree[0][0]
 
 
 async def distance4(start):
