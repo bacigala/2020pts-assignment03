@@ -3,14 +3,25 @@ import requests
 import functools
 
 
-async def complete_neighbourhood(start):
-    neighbours = requests.get(f'http://localhost:{start}').text.split(",")
+# default function with use of networking -> mocked in tests
+def get_neighbours_from_network(node):
+    return requests.get(f'http://localhost:{node}').text.split(",")
+
+
+# default function with use of networking -> mocked in tests
+def add_neighbour_on_network(node, new_neighbour):
+    requests.get(f'http://localhost:{node}/new?port={new_neighbour}')
+
+
+async def complete_neighbourhood(start, get_neighbours=get_neighbours_from_network,
+                                 add_neighbour=add_neighbour_on_network):
+    neighbours = get_neighbours(start)
     futures = []
     for neighbour in neighbours:
         async def process(node):
             for other in neighbours:
                 if other != node:
-                    requests.get(f'http://localhost:{node}/new?port={other}')
+                    add_neighbour(node, other)
 
         futures.append(asyncio.ensure_future(process(neighbour)))
     await asyncio.gather(*futures)
