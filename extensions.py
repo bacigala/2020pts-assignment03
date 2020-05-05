@@ -62,4 +62,30 @@ async def climb_degree(start):
 
 
 async def distance4(start):
-    pass
+    current_distance = 0
+    current_distance_nodes = set()
+    previous_distance_nodes = set()
+    visited_nodes = set()
+
+    current_distance_nodes.add(start)
+
+    while current_distance < 4:
+        current_distance += 1
+        previous_distance_nodes = current_distance_nodes
+        current_distance_nodes = set()
+        visited_nodes = visited_nodes.union(previous_distance_nodes)
+
+        # find all neighbours of previously visited nodes
+        futures = []
+        for previous_distance_node in previous_distance_nodes:
+            async def process(node):
+                nonlocal current_distance_nodes
+                node_neighbours = requests.get(f'http://localhost:{node}').text.split(",")
+                current_distance_nodes = current_distance_nodes.union(node_neighbours)
+
+            futures.append(asyncio.ensure_future(process(previous_distance_node)))
+        await asyncio.gather(*futures)
+
+        current_distance_nodes.difference_update(visited_nodes)
+
+    return current_distance_nodes
