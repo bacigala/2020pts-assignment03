@@ -27,16 +27,16 @@ async def complete_neighbourhood(start, get_neighbours=get_neighbours_from_netwo
     await asyncio.gather(*futures)
 
 
-async def climb_degree(start):
+async def climb_degree(start, get_neighbours=get_neighbours_from_network):
     while True:
-        neighbours = requests.get(f'http://localhost:{start}').text.split(",")
+        neighbours = get_neighbours(start)
 
         # asynchronous lookup for degrees of neighbour nodes
         futures = []
         neighbour_degree = []
         for neighbour in neighbours:
             async def process(node):
-                node_neighbours = requests.get(f'http://localhost:{node}').text.split(",")
+                node_neighbours = get_neighbours(node)
                 neighbour_degree.append((node, len(node_neighbours)))
 
             futures.append(asyncio.ensure_future(process(neighbour)))

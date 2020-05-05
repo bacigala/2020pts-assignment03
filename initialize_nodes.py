@@ -49,4 +49,3 @@ if __name__=="__main__":
     graph = {(graph_base+x, graph_base+y) for x, y in graph}
     nodes = {x for y in graph for x in y}
     do_stuff(HOST, nodes, graph)
-
