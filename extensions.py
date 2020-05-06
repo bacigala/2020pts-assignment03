@@ -1,5 +1,4 @@
 import asyncio
-import requests
 import functools
 import aiohttp
 
@@ -9,7 +8,7 @@ session = aiohttp.ClientSession()
 # default function with use of networking -> mocked in tests
 async def get_neighbours_from_network(node):
     async with session.get(f'http://localhost:{node}') as response:
-        return str(await response.text()).split(",")
+        return list(str(await response.text()).split(","))
 
 
 # default function with use of networking -> mocked in tests
@@ -19,13 +18,13 @@ async def add_neighbour_on_network(node, new_neighbour):
 
 async def complete_neighbourhood(start, get_neighbours=get_neighbours_from_network,
                                  add_neighbour=add_neighbour_on_network):
-    neighbours = get_neighbours(start)
+    neighbours = await get_neighbours(start)
     futures = []
     for neighbour in neighbours:
         async def process(node):
             for other in neighbours:
                 if other != node:
-                    add_neighbour(node, other)
+                    await add_neighbour(node, other)
 
         futures.append(asyncio.ensure_future(process(neighbour)))
     await asyncio.gather(*futures)
@@ -33,14 +32,14 @@ async def complete_neighbourhood(start, get_neighbours=get_neighbours_from_netwo
 
 async def climb_degree(start, get_neighbours=get_neighbours_from_network):
     while True:
-        neighbours = get_neighbours(start)
+        neighbours = await get_neighbours(start)
 
         # asynchronous lookup for degrees of neighbour nodes
         futures = []
         neighbour_degree = []
         for neighbour in neighbours:
             async def process(node):
-                node_neighbours = get_neighbours(node)
+                node_neighbours = await get_neighbours(node)
                 neighbour_degree.append((node, len(node_neighbours)))
 
             futures.append(asyncio.ensure_future(process(neighbour)))
@@ -95,7 +94,7 @@ async def distance4(start, get_neighbours=get_neighbours_from_network):
         for previous_distance_node in previous_distance_nodes:
             async def process(node):
                 nonlocal current_distance_nodes
-                node_neighbours = get_neighbours(node)
+                node_neighbours = await get_neighbours(node)
                 current_distance_nodes = current_distance_nodes.union(node_neighbours)
 
             futures.append(asyncio.ensure_future(process(previous_distance_node)))
