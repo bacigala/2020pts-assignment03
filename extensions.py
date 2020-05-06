@@ -2,18 +2,18 @@ import asyncio
 import functools
 import aiohttp
 
-session = aiohttp.ClientSession()
-
 
 # default function with use of networking -> mocked in tests
 async def get_neighbours_from_network(node):
-    async with session.get(f'http://localhost:{node}') as response:
-        return list(str(await response.text()).split(","))
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f'http://localhost:{node}') as response:
+            return list(str(await response.text()).split(","))
 
 
 # default function with use of networking -> mocked in tests
 async def add_neighbour_on_network(node, new_neighbour):
-    await session.get(f'http://localhost:{node}/new?port={new_neighbour}')
+    async with aiohttp.ClientSession() as session:
+        await session.get(f'http://localhost:{node}/new?port={new_neighbour}')
 
 
 async def complete_neighbourhood(start, get_neighbours=get_neighbours_from_network,
