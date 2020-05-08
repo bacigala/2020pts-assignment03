@@ -1,6 +1,6 @@
 import asyncio
 import asynctest
-from extensions import complete_neighbourhood
+from extensions import complete_neighbourhood, climb_degree, distance4
 import time
 
 
@@ -50,6 +50,16 @@ class TestParallelity(asynctest.TestCase):
         runtime = finish - start
         self.assertTrue(10 <= runtime)
         self.assertTrue(runtime < 11)
+
+    async def test_climb_degree(self):
+        start = time.time()
+        await climb_degree(3, get_neighbours_mocked_factory())
+        finish = time.time()
+        runtime = finish - start
+        print(runtime)
+        self.assertTrue(30 <= runtime)
+        self.assertTrue(runtime < 31)
+
 
 if __name__ == '__main__':
     asynctest.main()
